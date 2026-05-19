@@ -49,7 +49,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
     
     try {
       if (!projectId) {
-        // Se estiver usando o Expo Go ou não configurou EAS, pega token básico
+        // Se estiver usando o Expo Go ou não, pega token básico
         token = (await Notifications.getExpoPushTokenAsync()).data;
       } else {
         token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;

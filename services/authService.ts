@@ -26,7 +26,7 @@ export const authService = {
     const userFirebase = cred.user;
     const idToken = await userFirebase.getIdToken();
 
-    // 2. Chamar a API Java para obter dados do usuário e permissões
+    // 2. Chama a API Java para obter dados do usuário e permissões
     const res = await apiFetch("/auth/firebase-login", {
       method: "POST",
       body: JSON.stringify({ token: idToken }),
@@ -50,7 +50,7 @@ export const authService = {
       ativo: true,
     };
 
-    // 3. Buscar token de push no Firestore (se existir)
+    // 3. Busca token de push no Firestore (se existir)
     try {
       const docRef = doc(db, "users", userFirebase.uid);
       const docSnap = await getDoc(docRef);
@@ -81,7 +81,7 @@ export const authService = {
     const userFirebase = cred.user;
     const idToken = await userFirebase.getIdToken();
 
-    // 2. Registrar na API Java
+    // 2. Registra na API Java
     const res = await apiFetch("/auth/firebase-register", {
       method: "POST",
       body: JSON.stringify({ token: idToken, nome, telefone, apartamentoId, bloco }),

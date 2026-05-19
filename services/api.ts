@@ -1,9 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// export const API_BASE_URL = "http://portaria-app.hrgjf6h8amccbhf7.brazilsouth.azurecontainer.io:8080";
-// export const API_BASE_URL = "http://10.109.119.71:8080";
 export const API_BASE_URL = "https://portaria-deploy.onrender.com";
-// export const API_BASE_URL = "https://sprint-portaria.onrender.com";
 export const TOKEN_STORAGE_KEY = "@portaria_token";
 
 /**
@@ -36,14 +33,14 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
     });
     clearTimeout(id);
 
-    // Clonar a resposta para podermos ler o texto caso dê erro sem quebrar o .json() depois
+    // Clona a resposta para podermos ler o texto caso dê erro sem quebrar o .json() depois
     const resClone = response.clone();
     
     if (!response.ok) {
       const errorText = await resClone.text();
       console.error(`[API ERROR] ${endpoint} retornou status ${response.status}:`, errorText);
     } else {
-      // Tentar ver se retornou um HTML ou algo bizarro ao invés de JSON
+      // Tenta ver se retornou um HTML ou algo bizarro ao invés de JSON
       const text = await resClone.text();
       if (text.startsWith("<")) {
         console.error(`[API HTML WARNING] ${endpoint} retornou HTML inesperado:`, text);
