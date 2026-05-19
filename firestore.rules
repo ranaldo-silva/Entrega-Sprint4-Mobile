@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função para pegar a role do usuário atual
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // Função para pegar os dados do usuário
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Regras para a coleção Users
+    match /users/{userId} {
+      // Qualquer um logado pode ler seu próprio documento
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Super admin pode ler todos os usuários
+      allow read: if request.auth != null && getUserRole() == 'super_admin';
+      
+      // Permitir criação no momento do registro (se o uid for o mesmo)
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Super admin pode criar/atualizar/deletar qualquer usuário
+      allow update, delete: if request.auth != null && getUserRole() == 'super_admin';
+    }
+
+    // Regras para Encomendas
+    match /encomendas/{encomendaId} {
+      // Super admin pode tudo
+      allow read, write, delete: if request.auth != null && getUserRole() == 'super_admin';
+      
+      // Porteiro pode ler e escrever, mas não pode deletar
+      allow read, write: if request.auth != null && getUserRole() == 'porteiro';
+      
+      // Morador só pode ler encomendas do seu bloco e apartamento
+      allow read: if request.auth != null && getUserRole() == 'morador' 
+                  && resource.data.bloco == getUserData().bloco 
+                  && resource.data.apartamento == getUserData().apartamento;
+                  
+      // Impede morador de escrever ou deletar
+      allow write, delete: if false;
+    }
+    
+    // Regras para Moradores (se existir essa coleção além de "users")
+    match /moradores/{moradorId} {
+      allow read, write, delete: if request.auth != null && getUserRole() == 'super_admin';
+      allow read, write: if request.auth != null && getUserRole() == 'porteiro';
+      allow read: if request.auth != null && getUserRole() == 'morador' && resource.data.userId == request.auth.uid;
+    }
+    
+    // Fallback
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

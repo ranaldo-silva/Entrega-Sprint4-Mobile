@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "portaria",
+    "slug": "portaria",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/modern_logo.png",
+    "scheme": "portaria",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.challenge.portaria"
+    },
+    "android": {
+      "package": "com.portaria.app",
+      "googleServicesFile": "./google-services.json",
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/modern_logo.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/modern_logo.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/modern_logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#000000"
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/modern_logo.png",
+          "color": "#ffffff"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8a70db51-95ef-4f5d-a030-9b52427c10ef"
+      }
+    }
+  }
+}
