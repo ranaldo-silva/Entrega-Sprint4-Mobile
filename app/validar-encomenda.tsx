@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, ScrollView, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import Sidebar from "../components/Sidebar";
 import { confirmarRetirada } from "../lib/storage";
@@ -20,6 +20,8 @@ function formatarHoraLocal() {
 
 export default function ValidarEncomenda() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
 

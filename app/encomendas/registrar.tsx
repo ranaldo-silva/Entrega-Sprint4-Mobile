@@ -21,6 +21,8 @@ import { abrirWhatsApp } from "../../lib/whatsapp";
 import { showToast } from "../../components/Toast";
 import { SkeletonListItem } from "../../components/SkeletonLoader";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 export default function RegistrarEncomenda() {
   const router = useRouter();
@@ -92,6 +94,22 @@ export default function RegistrarEncomenda() {
         if (morador?.telefone) {
           const mensagem = `📦 Olá ${morador.nome}! Sua encomenda (${origem}) chegou na portaria.\nToken para retirada: *${resultado.token}*\n\nPor favor, retire na recepção. OBRIGADO! 🏢`;
           abrirWhatsApp(morador.telefone, mensagem);
+        }
+
+        const moradorDoc = await getDoc(doc(db, 'users', String(selectedMoradorId)));
+        const expoPushToken = moradorDoc.data()?.expoPushToken;
+
+        if (expoPushToken) {
+          await fetch('https://exp.host/--/api/v2/push/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: expoPushToken,
+              title: '📦 Encomenda chegou!',
+              body: `Sua encomenda (${origem}) está na portaria. Token: ${resultado.token}`,
+              sound: 'default',
+            }),
+          });
         }
       }
 
