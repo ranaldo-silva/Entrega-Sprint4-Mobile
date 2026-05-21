@@ -69,7 +69,7 @@ export default function MoradorScreen() {
           <View style={styles.headerContent}>
             <View style={{ flex: 1 }}>
               <Text style={styles.titulo}>📦 Portal do Morador</Text>
-              <Text style={styles.headerSub}>{usuario?.email}</Text>
+              <Text style={styles.headerSub}>{usuario?.nome}</Text>
             </View>
             <TouchableOpacity onPress={logout} style={styles.sairBtn}>
               <Text style={styles.sairTexto}>🚪 Sair</Text>

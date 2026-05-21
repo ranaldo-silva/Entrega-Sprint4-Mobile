@@ -40,10 +40,23 @@ export const authService = {
     const apiUser = await res.json();
     const roleBackend = apiUser.user?.perfil || apiUser.user?.role || "MORADOR";
 
+    // Tenta extrair o nome do morador a partir de várias possibilidades do response da API
+    const nomeBackend =
+      apiUser.user?.nome ||
+      apiUser.user?.name ||
+      apiUser.user?.nomeCompleto ||
+      (apiUser.user?.nome && apiUser.user?.sobrenome
+        ? `${apiUser.user.nome} ${apiUser.user.sobrenome}`.trim()
+        : null) ||
+      apiUser.nome ||
+      apiUser.name ||
+      userFirebase.displayName ||
+      email.split("@")[0]; // Último recurso: parte antes do @ do e-mail
+
     const usuarioFinal: UsuarioApp = {
       uid: userFirebase.uid,
       email: userFirebase.email,
-      nome: apiUser.user?.nome || userFirebase.displayName || email,
+      nome: nomeBackend,
       role: roleBackend as Role,
       idBackend: apiUser.user?.id,
       idMorador: apiUser.user?.idMorador || undefined,
