@@ -21,8 +21,10 @@ service cloud.firestore {
       
       // Permitir criação no momento do registro (se o uid for o mesmo)
       allow create: if request.auth != null && request.auth.uid == userId;
-      // Super admin pode criar/atualizar/deletar qualquer usuário
-      allow update, delete: if request.auth != null && getUserRole() == 'super_admin';
+      // Qualquer um logado pode atualizar seu próprio documento (necessário para registrar o push token)
+      allow update: if request.auth != null && (request.auth.uid == userId || getUserRole() == 'super_admin');
+      // Apenas super admin pode deletar usuários
+      allow delete: if request.auth != null && getUserRole() == 'super_admin';
     }
 
     // Regras para Encomendas

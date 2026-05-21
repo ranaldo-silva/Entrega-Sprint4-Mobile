@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { authService, UsuarioApp } from "../services/authService";
 import { registerForPushNotificationsAsync } from "../services/pushNotificationService";
+import { auth } from "../lib/firebase";
+import { TOKEN_STORAGE_KEY } from "../services/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface AuthContextData {
   usuario: UsuarioApp | null;
@@ -19,15 +22,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function loadSession() {
       try {
+        // 1. Aguarda o Firebase Auth carregar/restaurar a sessão persistida no React Native
+        await new Promise<void>((resolve) => {
+          const unsubscribe = auth.onAuthStateChanged(() => {
+            unsubscribe();
+            resolve();
+          });
+        });
+
+        // 2. Se houver um usuário autenticado no Firebase, obtém um ID Token fresco
+        if (auth.currentUser) {
+          try {
+            const freshToken = await auth.currentUser.getIdToken(true);
+            await AsyncStorage.setItem(TOKEN_STORAGE_KEY, freshToken);
+          } catch (tokenErr) {
+            console.warn("Aviso: Falha ao obter token renovado do Firebase:", tokenErr);
+          }
+        }
+
+        // 3. Verifica a sessão local
         const session = await authService.checkSession();
         if (session) {
-          if (!session.user.role || (session.user.role !== "ADMIN" && session.user.role !== "MORADOR")) {
-            // Se o usuário não tem role ou a role é antiga (super_admin, porteiro), força logout
+          // Garante que se o Firebase deslogou, a sessão local também é encerrada
+          if (!auth.currentUser) {
+            await authService.logout();
+            setUsuario(null);
+          } else if (!session.user.role || (session.user.role !== "ADMIN" && session.user.role !== "MORADOR")) {
+            // Se o usuário não tem role ou a role é inválida/antiga, força logout
             await authService.logout();
             setUsuario(null);
           } else {
             setUsuario(session.user);
           }
+        } else {
+          // Se não houver sessão local mas houver usuário no Firebase, desloga para manter em sincronia
+          if (auth.currentUser) {
+            await authService.logout();
+          }
+          setUsuario(null);
         }
       } catch (err) {
         console.error("Erro ao verificar sessão persistida:", err);
@@ -50,6 +82,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setupPushNotifications();
   }, [usuario?.uid]); // Executa apenas quando o uid do usuário muda ou é setado
+
+  // Escuta mudanças de token do Firebase Auth (renovação automática) e sincroniza no AsyncStorage
+  useEffect(() => {
+    const unsubscribe = auth.onIdTokenChanged(async (user) => {
+      if (user) {
+        try {
+          const token = await user.getIdToken();
+          await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
+        } catch (err) {
+          console.error("Erro ao sincronizar token renovado no AsyncStorage:", err);
+        }
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   async function login(email: string, senha: string) {
     setCarregando(true);

@@ -92,7 +92,7 @@ export default function RegistrarEncomenda() {
 
         const morador = moradores.find((m) => m.id === Number(selectedMoradorId));
         if (morador?.telefone) {
-          const mensagem = `📦 Olá ${morador.nome}! Sua encomenda (${origem}) chegou na portaria.\nToken para retirada: *${resultado.token}*\n\nPor favor, retire na recepção. OBRIGADO! 🏢`;
+          const mensagem = `📦 Olá ${morador.nome}! Sua encomenda (${origem}) chegou na portaria.\nToken para retirada: *${resultado.token}*\n\nPor favor, retire na recepção. Obrigado!`;
           abrirWhatsApp(morador.telefone, mensagem);
         }
 

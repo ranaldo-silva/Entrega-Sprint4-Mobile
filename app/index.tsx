@@ -333,7 +333,7 @@ export default function Home() {
                             if (moradorCompleto && moradorCompleto.telefone) {
                               const nome =
                                 `${moradorCompleto.nome} ${moradorCompleto.sobrenome || ""}`.trim();
-                              const msg = `Olá ${nome}! 📦\n\nSua encomenda de ${item.origem || "origem não informada"} chegou na portaria.\n\nToken para retirada: *${item.token}*.\n\nObrigado! 🏢`;
+                              const msg = `Olá ${nome}! 📦\n\nSua encomenda de ${item.origem || "origem não informada"} chegou na portaria.\n\nToken para retirada: *${item.token}*.\n\nObrigado!`;
                               abrirWhatsApp(moradorCompleto.telefone, msg);
                             } else {
                               showToast(
