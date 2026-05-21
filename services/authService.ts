@@ -121,7 +121,13 @@ export const authService = {
 
     // Inicializa doc no Firestore apenas para futuro armazenamento do Push Token
     try {
-      await setDoc(doc(db, "users", userFirebase.uid), { expoPushToken: "" }, { merge: true });
+      await setDoc(doc(db, "users", userFirebase.uid), {
+        expoPushToken: "",
+        email: userFirebase.email,
+        role: usuarioFinal.role,
+        idBackend: usuarioFinal.idBackend ?? null,
+        idMorador: usuarioFinal.idMorador ?? usuarioFinal.idBackend ?? null,
+      }, { merge: true });
     } catch (err) {
       console.warn("Aviso: Falha ao inicializar push token doc no Firestore.", err);
     }
@@ -148,16 +154,24 @@ export const authService = {
     await AsyncStorage.removeItem("@portaria_user");
   },
 
-  async updatePushToken(uid: string, token: string): Promise<void> {
+  async updatePushToken(usuario: UsuarioApp, token: string): Promise<void> {
     // Continua usando Firestore para salvar o push token para não quebrar integrações existentes
     try {
-      const userRef = doc(db, "users", uid);
-      await setDoc(userRef, { expoPushToken: token }, { merge: true });
+      const userRef = doc(db, "users", usuario.uid);
+      await setDoc(userRef, {
+        expoPushToken: token,
+        email: usuario.email || null,
+        role: usuario.role,
+        idBackend: usuario.idBackend ?? null,
+        idMorador: usuario.idMorador ?? usuario.idBackend ?? null,
+      }, { merge: true });
       
       const userStr = await AsyncStorage.getItem("@portaria_user");
       if (userStr) {
         const user = JSON.parse(userStr) as UsuarioApp;
         user.expoPushToken = token;
+        user.idBackend = usuario.idBackend;
+        user.idMorador = usuario.idMorador;
         await AsyncStorage.setItem("@portaria_user", JSON.stringify(user));
       }
     } catch (err) {

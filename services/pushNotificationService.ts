@@ -24,6 +24,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
     await Notifications.setNotificationChannelAsync('default', {
       name: 'default',
       importance: Notifications.AndroidImportance.MAX,
+      sound: 'default',
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#3b82f6',
     });
@@ -63,4 +64,29 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
   }
 
   return token;
+}
+
+export async function sendEncomendaPushNotification(
+  expoPushToken: string,
+  origem: string,
+  tokenRetirada?: string
+): Promise<void> {
+  const res = await fetch('https://exp.host/--/api/v2/push/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      to: expoPushToken,
+      title: 'Encomenda chegou!',
+      body: `Sua encomenda (${origem}) esta na portaria. Token: ${tokenRetirada || '-'}`,
+      sound: 'default',
+      channelId: 'default',
+      priority: 'high',
+    }),
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok || data?.data?.status === 'error') {
+    const message = data?.data?.message || data?.errors?.[0]?.message || 'Falha ao enviar push notification.';
+    throw new Error(message);
+  }
 }

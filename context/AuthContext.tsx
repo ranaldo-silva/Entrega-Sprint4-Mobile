@@ -74,9 +74,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function setupPushNotifications() {
       if (usuario) {
         const token = await registerForPushNotificationsAsync();
-        if (token && token !== usuario.expoPushToken) {
-          await authService.updatePushToken(usuario.uid, token);
-          setUsuario(prev => prev ? { ...prev, expoPushToken: token } : null);
+        if (token) {
+          await authService.updatePushToken(usuario, token);
+          if (token !== usuario.expoPushToken) {
+            setUsuario(prev => prev ? { ...prev, expoPushToken: token } : null);
+          }
         }
       }
     }

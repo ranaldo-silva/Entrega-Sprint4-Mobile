@@ -13,7 +13,6 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import Sidebar from "../../components/Sidebar";
 import {
   Encomenda,
-  Morador,
 } from "../../lib/storage";
 import { useMoradores } from "../../hooks/useMoradores";
 import { useEncomendas, useCreateEncomenda, useUpdateEncomenda } from "../../hooks/useEncomendas";
@@ -21,8 +20,32 @@ import { abrirWhatsApp } from "../../lib/whatsapp";
 import { showToast } from "../../components/Toast";
 import { SkeletonListItem } from "../../components/SkeletonLoader";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, type Query } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { sendEncomendaPushNotification } from "../../services/pushNotificationService";
+
+async function buscarExpoPushTokenMorador(moradorId?: number, email?: string): Promise<string | null> {
+  const usersRef = collection(db, 'users');
+  const filtros: Query[] = [];
+
+  if (moradorId) {
+    filtros.push(query(usersRef, where('idMorador', '==', moradorId)));
+    filtros.push(query(usersRef, where('idBackend', '==', moradorId)));
+  }
+
+  if (email) {
+    filtros.push(query(usersRef, where('email', '==', email)));
+  }
+
+  for (const filtro of filtros) {
+    const querySnapshot = await getDocs(filtro);
+    const docComToken = querySnapshot.docs.find((docSnap) => !!docSnap.data().expoPushToken);
+    const token = docComToken?.data().expoPushToken;
+    if (token) return token;
+  }
+
+  return null;
+}
 
 export default function RegistrarEncomenda() {
   const router = useRouter();
@@ -96,20 +119,21 @@ export default function RegistrarEncomenda() {
           abrirWhatsApp(morador.telefone, mensagem);
         }
 
-        const moradorDoc = await getDoc(doc(db, 'users', String(selectedMoradorId)));
-        const expoPushToken = moradorDoc.data()?.expoPushToken;
+        if (morador) {
+          try {
+            const expoPushToken = await buscarExpoPushTokenMorador(morador.id, morador.email);
 
-        if (expoPushToken) {
-          await fetch('https://exp.host/--/api/v2/push/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              to: expoPushToken,
-              title: '📦 Encomenda chegou!',
-              body: `Sua encomenda (${origem}) está na portaria. Token: ${resultado.token}`,
-              sound: 'default',
-            }),
-          });
+            if (expoPushToken) {
+              await sendEncomendaPushNotification(expoPushToken, origem, resultado.token);
+            } else {
+              console.warn("Morador sem Expo Push Token cadastrado para notificacao.", {
+                moradorId: morador.id,
+                email: morador.email,
+              });
+            }
+          } catch (pushErr) {
+            console.error("Erro ao enviar push:", pushErr);
+          }
         }
       }
 
@@ -125,11 +149,11 @@ export default function RegistrarEncomenda() {
   return (
     <View style={styles.container}>
       <Sidebar />
-      <ScrollView 
-        style={styles.areaConteudo} 
-        contentContainerStyle={{ 
+      <ScrollView
+        style={styles.areaConteudo}
+        contentContainerStyle={{
           paddingTop: Platform.OS === "android" ? 60 : isMobile ? 70 : 30,
-          paddingBottom: 40 
+          paddingBottom: 40
         }}
       >
         <TouchableOpacity onPress={() => router.push("/")} style={styles.voltarBtn}>
@@ -138,37 +162,37 @@ export default function RegistrarEncomenda() {
 
         <Animated.View entering={FadeInDown.duration(600)}>
           <Text style={styles.titulo}>
-             {editId ? "📦 Editar Encomenda" : "📦 Nova Encomenda"}
+            {editId ? "📦 Editar Encomenda" : "📦 Nova Encomenda"}
           </Text>
           <Text style={styles.subtitulo}>
-             {editId ? "Atualize os dados da correspondência" : "Registre a chegada de um novo pacote"}
+            {editId ? "Atualize os dados da correspondência" : "Registre a chegada de um novo pacote"}
           </Text>
         </Animated.View>
 
-        <Animated.View 
+        <Animated.View
           entering={FadeInDown.delay(100).duration(600)}
           style={styles.cardForm}
         >
           {/* Morador Selection */}
           <Text style={styles.secaoLabel}>1. Selecionar Morador</Text>
-          
+
           <View style={styles.searchBox}>
-             <Text style={styles.searchIcon}>🔍</Text>
-             <TextInput
-               style={styles.inputSearch}
-               placeholder="Buscar por nome, bloco ou apartamento..."
-               value={filtro}
-               onChangeText={setFiltro}
-             />
+            <Text style={styles.searchIcon}>🔍</Text>
+            <TextInput
+              style={styles.inputSearch}
+              placeholder="Buscar por nome, bloco ou apartamento..."
+              value={filtro}
+              onChangeText={setFiltro}
+            />
           </View>
 
           <View style={styles.moradorListContainer}>
             {loading ? (
               [1, 2, 3].map(i => <SkeletonListItem key={i} />)
             ) : moradoresFiltraveis.length === 0 ? (
-               <View style={styles.emptySearch}>
-                  <Text style={styles.emptySearchText}>Nenhum morador encontrado.</Text>
-               </View>
+              <View style={styles.emptySearch}>
+                <Text style={styles.emptySearchText}>Nenhum morador encontrado.</Text>
+              </View>
             ) : (
               <ScrollView nestedScrollEnabled style={{ maxHeight: 220 }}>
                 {moradoresFiltraveis.map((item) => (
@@ -181,7 +205,7 @@ export default function RegistrarEncomenda() {
                     ]}
                   >
                     <View style={[styles.moradorCheck, selectedMoradorId === String(item.id) && styles.moradorCheckActive]}>
-                       {selectedMoradorId === String(item.id) && <Text style={{ color: "white", fontSize: 10 }}>✓</Text>}
+                      {selectedMoradorId === String(item.id) && <Text style={{ color: "white", fontSize: 10 }}>✓</Text>}
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.moradorNome, selectedMoradorId === String(item.id) && { color: "#0d47a1" }]}>
@@ -201,7 +225,7 @@ export default function RegistrarEncomenda() {
 
           {/* Package Details */}
           <Text style={styles.secaoLabel}>2. Detalhes da Encomenda</Text>
-          
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Origem / Transportadora</Text>
             <TextInput
@@ -223,8 +247,8 @@ export default function RegistrarEncomenda() {
             />
           </View>
 
-          <TouchableOpacity 
-            style={[styles.botao, saving && { opacity: 0.7 }]} 
+          <TouchableOpacity
+            style={[styles.botao, saving && { opacity: 0.7 }]}
             onPress={salvar}
             disabled={saving}
           >
@@ -241,12 +265,12 @@ export default function RegistrarEncomenda() {
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: "row", backgroundColor: "#f1f5f9" },
   areaConteudo: { flex: 1, padding: 24 },
-  voltarBtn: { 
-    marginBottom: 24, 
-    alignSelf: "flex-end", 
-    paddingVertical: 10, 
-    paddingHorizontal: 16, 
-    backgroundColor: "#e2e8f0", 
+  voltarBtn: {
+    marginBottom: 24,
+    alignSelf: "flex-end",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: "#e2e8f0",
     borderRadius: 12,
     flexDirection: "row",
     alignItems: "center"

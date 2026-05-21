@@ -16,6 +16,7 @@ export interface Morador {
 export interface Encomenda {
   id?: number;
   token?: string;
+  tokenEncomenda?: string;
   origem?: string;
   retirada?: boolean;
   retiradaEm?: string;
@@ -24,6 +25,24 @@ export interface Encomenda {
   descricao?: string;
   moradorId?: number;
   morador?: Morador | null;
+}
+
+function normalizeEncomenda(e: any): Encomenda {
+  if (!e) return {};
+
+  return {
+    id: e.id,
+    token: e.tokenEncomenda ?? e.token ?? "—",
+    tokenEncomenda: e.tokenEncomenda,
+    origem: e.origem ?? "—",
+    retirada: e.foiRetirada ?? e.retirada ?? false,
+    retiradaEm: e.retiradaEm ?? null,
+    dataRecebimento: e.dataRecebida ?? e.dataRecebimento ?? null,
+    dataRegistro: e.dataRegistro ?? null,
+    descricao: e.descricao ?? "",
+    moradorId: e.moradorId,
+    morador: e.morador ?? null,
+  };
 }
 
 // --------------------
@@ -139,16 +158,7 @@ export async function getEncomendas(): Promise<Encomenda[]> {
     data = [];
   }
 
-  return data.map((e: any) => ({
-    id: e.id,
-    token: e.tokenEncomenda ?? e.token ?? "—",
-    origem: e.origem ?? "—",
-    retirada: e.foiRetirada ?? e.retirada ?? false,
-    retiradaEm: e.retiradaEm ?? null,
-    dataRecebimento: e.dataRecebida ?? e.dataRecebimento ?? null,
-    descricao: e.descricao ?? "",
-    morador: e.morador ?? null,
-  }));
+  return data.map(normalizeEncomenda);
 }
 
 // Salvar encomenda
@@ -163,7 +173,7 @@ export async function saveEncomendas(encomenda: Partial<Encomenda>): Promise<Enc
     throw new Error(msg);
   }
 
-  return await res.json();
+  return normalizeEncomenda(await res.json());
 }
 
 // Atualizar encomenda
@@ -181,14 +191,15 @@ export async function updateEncomenda(
     throw new Error(msg);
   }
 
-  return await res.json();
+  return normalizeEncomenda(await res.json());
 }
 
 // ✅ NOVA: buscar encomenda por ID
 export async function getEncomendaById(id: string | number): Promise<Encomenda> {
   const res = await apiFetch("/encomendas");
   const data = await res.json();
-  return data.find((e: any) => e.id === Number(id));
+  const encomenda = data.find((e: any) => e.id === Number(id));
+  return normalizeEncomenda(encomenda);
 }
 
 // ✅ Já existente
